@@ -59,8 +59,10 @@ describe("CrowdFundingFactory", () => {
             accounts[0]
           );
 
-        const campaignOwner = await instanceOne.getCampaignOwner();
-        expect(campaignOwner).to.be.equal(await accounts[0].getAddress());
+        const campaignDetails = await instanceOne.getFundingDetails();
+        expect(campaignDetails[0]).to.be.equal(await accounts[0].getAddress());
+        expect(campaignDetails[2]).to.equal(amount);
+        expect(campaignDetails[1]).to.be.above(0);
 	})
 
 	// describe("Minting Functionality", () => {

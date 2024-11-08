@@ -22,8 +22,8 @@ contract CrowdFundingFactory is Ownable {
     
      //state variables;
     address immutable private CROWDFUNDING_IMPLEMENTATION;
-    address[] public deployedCrowdFundingContracts;
-    uint256 public fundingFee = 0.001 ether;
+    address[] private deployedCrowdFundingContracts;
+    uint256 private fundingFee = 0.001 ether;
 
     constructor(address _implementation) Ownable(msg.sender) {
         CROWDFUNDING_IMPLEMENTATION = _implementation;

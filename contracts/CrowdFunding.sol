@@ -35,15 +35,15 @@ contract CrowdFundingContractForBegiBegi is Initializable {
 
     bool public campaignEnded;
     address payable private _campaignOwner;
-    string  public fundingDetailsId;
-    uint256 public targetAmount;
-    uint256 public campaignDuration;
+    string  private fundingDetailsId;
+    uint256 private targetAmount;
+    uint256 private campaignDuration;
     uint256 private _amountDonated;
     uint256 private _numberOfDonors;
     uint256 private _milestoneCounter;
     uint256 private _approvedMilestone;
     uint256 private _numberOfWithdrawal;
-    uint256 public amountRecalledByDonor;
+    uint256 private amountRecalledByDonor;
     uint256 constant _baseNumber = 10**18;
     uint256 constant _taxOnWithdrawingDonation = 5;  //20% tax on withdrawing your donation
 
@@ -318,8 +318,9 @@ function contractBalance() public view returns (uint256) {
     return address(this).balance;
 }
 
-function getCampaignOwner() public view returns (address) {
-    return _campaignOwner;
+
+function getFundingDetails() public view returns (address, uint256, uint256){
+    return (_campaignOwner, campaignDuration, targetAmount );
 }
 
 receive() external payable {}
