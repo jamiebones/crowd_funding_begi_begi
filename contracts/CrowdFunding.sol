@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./CrowdFundingFactory.sol";
+import "hardhat/console.sol";
 
 
 contract CrowdFundingContractForBegiBegi is Initializable {
@@ -45,7 +46,7 @@ contract CrowdFundingContractForBegiBegi is Initializable {
     uint256 private _numberOfWithdrawal;
     uint256 private amountRecalledByDonor;
     uint256 constant _baseNumber = 10**18;
-    uint256 constant _taxOnWithdrawingDonation = 5;  //20% tax on withdrawing your donation
+    uint256 constant _taxOnWithdrawingDonation = 20;  //20% tax on withdrawing your donation
 
     address private factoryContractAddress;
 
@@ -85,7 +86,7 @@ contract CrowdFundingContractForBegiBegi is Initializable {
     //enum 
     enum FundingCategory { Sports, General, Education }
 
-    enum MilestoneStatus { Default, Approved, Declined, Pending }
+    enum MilestoneStatus { Default, Pending, Approved, Declined }
 
     mapping(address => uint256) public donors;
     mapping(uint256 => Milestone) public milestones;
@@ -135,7 +136,7 @@ contract CrowdFundingContractForBegiBegi is Initializable {
         public
     {   
         //check if we have a pending milestone or no milestone at all
-        if ( milestones[_milestoneCounter].status != MilestoneStatus.Default ){
+        if ( milestones[_milestoneCounter].status == MilestoneStatus.Pending  ){
             revert YouHaveAPendingMileStone();
         }
 
@@ -160,6 +161,7 @@ contract CrowdFundingContractForBegiBegi is Initializable {
        }
        //check the milestone
        uint256 donationDivider = 0;
+       console.log("amount donated ", amountDonated);
        if ( _approvedMilestone == 0 ){
         //get your full money
            donationDivider = _baseNumber;
@@ -182,20 +184,19 @@ contract CrowdFundingContractForBegiBegi is Initializable {
        //there's a tax of 20% of your remaining amount if you are withdrawing your donation
        //eg 80 * 20 / 100 = 16. 80 - 16 = 64
        
-       uint256 fundsToCollect = amountDonated * donationDivider * _taxOnWithdrawingDonation / _baseNumber * 100;
-       
-       uint256 taxOnWithdrawal = _taxOnWithdrawingDonation * fundsToCollect / 100;
-
-       uint256 totalToCollected = fundsToCollect - taxOnWithdrawal;
-
+       uint256 taxOnWithdrawal = amountDonated * donationDivider * _taxOnWithdrawingDonation / ( _baseNumber * 100 );
+       uint256 amountToCollect = amountDonated * donationDivider * (100 - _taxOnWithdrawingDonation) / ( _baseNumber * 100 );
        donors[msg.sender] = 0;
        _numberOfDonors --; //reduce the number of donors
-       amountRecalledByDonor += fundsToCollect;
+       amountRecalledByDonor += taxOnWithdrawal + amountToCollect;
 
-       (bool success, ) = payable(msg.sender).call{value: totalToCollected}("");
+       (bool success, ) = payable(msg.sender).call{value: amountToCollect}("");
        (bool successTwo, ) = payable(factoryContractAddress).call{value: taxOnWithdrawal}("");
-       if (!success && !successTwo){
-        revert WithdrawalFailed(totalToCollected);
+       if (!success){
+        revert WithdrawalFailed(amountToCollect);
+       }
+        if (!successTwo){
+        revert WithdrawalFailed(taxOnWithdrawal);
        }
     }
 
@@ -204,6 +205,7 @@ contract CrowdFundingContractForBegiBegi is Initializable {
         Milestone storage milestone = milestones[_milestoneCounter];
         //check milestone duration if it has expired
        if (block.timestamp > milestone.votingPeriod ) {
+        
         revert MileStoneVotingHasElapsed();
        }
 
@@ -237,17 +239,19 @@ function withdrawMilestone() public campaignOwner(msg.sender) {
         revert MaximumNumberofWithdrawalExceeded();
     }
     uint256 bal = contractBalance();
+    Milestone storage milestone = milestones[_milestoneCounter];
+    uint256 totalVotes = milestone.againstVote + milestone.supportVote;
 
     // Allow withdrawal without voting in the first milestone
     if (_numberOfWithdrawal == 0 && _milestoneCounter == 1 && block.timestamp > campaignDuration) {
         //withdrawing 1/3 of the available balance
         processWithdrawal(1 * bal * _baseNumber / (3 * _baseNumber), false);
+        milestone.approved = true;
+        _approvedMilestone++;
+        milestone.status = MilestoneStatus.Approved;
         _numberOfWithdrawal = 1;
         return;
     }
-
-    Milestone storage milestone = milestones[_milestoneCounter];
-    uint256 totalVotes = milestone.againstVote + milestone.supportVote;
 
     checkMilestoneStatus(milestone);
 
@@ -286,7 +290,7 @@ function checkMilestoneStatus(Milestone storage milestone) internal {
     if (block.timestamp < milestone.votingPeriod) {
         revert MileStoneVotingPeriodHasNotElapsed();
     }
-    if (milestone.status != MilestoneStatus.Pending) {
+    if (milestone.status != MilestoneStatus.Pending ) {
         revert MilestoneHasEnded();
     }
     if (milestone.againstVote >= milestone.supportVote) {
@@ -297,6 +301,7 @@ function checkMilestoneStatus(Milestone storage milestone) internal {
 function approveMilestone(Milestone storage milestone) internal {
     milestone.status = MilestoneStatus.Approved;
     milestone.approved = true;
+    _approvedMilestone++;
     emit MileStoneApproval(address(this), milestone.milestoneCID, block.timestamp);
 }
 

@@ -71,6 +71,11 @@ contract CrowdFundingFactory is Ownable {
        }
     }
 
+     function contractBalance() public view returns (uint256) {
+        return address(this).balance;
+        
+    }
+
     function deployedContracts() public view returns (address[] memory) {
         return deployedCrowdFundingContracts;
     }
