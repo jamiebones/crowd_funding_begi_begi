@@ -31,6 +31,7 @@ describe("CrowdFundingFactory", () => {
 		)
 
         const fundingDetailsId = "ipfs://dadadadaddadad";
+        const category = "Energy";
         const amount = ethers.parseEther("1");
         const duration = (await time.latest()) + ONE_DAY_IN_SECS;
         const amountToDeposit = ethers.parseEther("0.001");
@@ -38,7 +39,7 @@ describe("CrowdFundingFactory", () => {
         const accounts = await ethers.getSigners();
        
         const txn = await factoryContract.connect(accounts[0]).createNewCrowdFundingContract(
-            fundingDetailsId, amount, duration, {value: amountToDeposit}
+            fundingDetailsId, amount, duration, category, {value: amountToDeposit}
         );
 
         const receipt = await txn.wait();
@@ -71,9 +72,10 @@ describe("CrowdFundingFactory", () => {
         const amount = ethers.parseEther("1");
         const duration = (await time.latest()) + ONE_DAY_IN_SECS;
         const amountToDeposit = ethers.parseEther("0.001");
+        const category = "Education"
        
         const txn = await factoryContract.connect(accounts[0]).createNewCrowdFundingContract(
-            fundingDetailsId, amount, duration, {value: amountToDeposit}
+            fundingDetailsId, amount, duration, category, {value: amountToDeposit}
         );
 
         const receipt = await txn.wait();

@@ -7,8 +7,6 @@ import "hardhat/console.sol";
 
 
 contract CrowdFundingContractForBegiBegi is Initializable {
-
-
     //error
     error CamPaignEndedErrorNoLongerAcceptingDonations();
     error InsufficientFunds();
@@ -24,18 +22,22 @@ contract CrowdFundingContractForBegiBegi is Initializable {
     error MileStoneVotingPeriodHasNotElapsed();
     error MilestoneHasEnded();
     error MaximumNumberofWithdrawalExceeded();
+    error CampaignStillRunning();
 
      //events
-    event FundsDonatedEvent(address indexed donor, uint256 amount, uint256 date);
     event MilestoneCreated(address indexed owner, uint256 datecreated, uint256 period, string milestoneCID);
     event DonatedToProject(address indexed donor, uint256 amount, address indexed project, uint256 date);
     event VotedOnMileStone(address indexed voter, address indexed project, bool vote, uint256 date);
     event MileStoneRejected(address indexed project, string milestoneCID, uint256 date);
     event MileStoneApproval(address indexed project, string milestoneCID, uint256 date);
+    event MilestoneWithdrawal(address indexed owner, uint256 amount, uint256 date);
+    event CampaignEnded(address indexed project, uint256 data);
+    event DonationRetrievedByDonor(address indexed project, address indexed donor, uint256 amountReceived, uint256 amountDonated, uint256 date);
    
 
     bool public campaignEnded;
     address payable private _campaignOwner;
+    string private category;
     string  private fundingDetailsId;
     uint256 private targetAmount;
     uint256 private campaignDuration;
@@ -73,8 +75,6 @@ contract CrowdFundingContractForBegiBegi is Initializable {
     }
 
 
-    mapping (address => bool) private hhhh;
-
     modifier campaignOwner(address _address) {
         if ( _address != _campaignOwner ){
             revert YouAreNotTheOwnerOfTheCampaign();
@@ -91,26 +91,20 @@ contract CrowdFundingContractForBegiBegi is Initializable {
     mapping(address => uint256) public donors;
     mapping(uint256 => Milestone) public milestones;
 
-   
-
-    //constant
-
-    //struct
-
-    //state variables
-
      //function to initilize the contract:
      function initialize(
         string calldata _fundingCId,
         uint256 _amount,
         uint256 _duration,
-        address _factoryAddress
+        address _factoryAddress,
+        string calldata _category
     ) external initializer {
         _campaignOwner = payable(tx.origin);
         fundingDetailsId = _fundingCId;
         targetAmount = _amount;
         campaignDuration = _duration;
         factoryContractAddress = _factoryAddress;
+        category = _category;
     }
 
      function giveDonationToCause() public payable {
@@ -147,11 +141,11 @@ contract CrowdFundingContractForBegiBegi is Initializable {
         _milestoneCounter++;
         //voting period for a minimum of 2 weeks before the proposal fails or passes
         Milestone storage newmilestone = milestones[_milestoneCounter];
+        newmilestone.status = MilestoneStatus.Pending;
         newmilestone.milestoneCID = milestoneCID;
         newmilestone.approved = false;
-        newmilestone.votingPeriod = block.timestamp + 14 days;
-        newmilestone.status = MilestoneStatus.Pending;
-        emit MilestoneCreated(msg.sender, block.timestamp, block.timestamp + 14 days, milestoneCID);
+        newmilestone.votingPeriod = block.timestamp + 14 * 1 days;
+        emit MilestoneCreated(msg.sender, block.timestamp, block.timestamp + 14 * 1 days, milestoneCID);
     }
 
     function retrieveDonatedAmount() public payable {
@@ -161,7 +155,6 @@ contract CrowdFundingContractForBegiBegi is Initializable {
        }
        //check the milestone
        uint256 donationDivider = 0;
-       console.log("amount donated ", amountDonated);
        if ( _approvedMilestone == 0 ){
         //get your full money
            donationDivider = _baseNumber;
@@ -198,6 +191,7 @@ contract CrowdFundingContractForBegiBegi is Initializable {
         if (!successTwo){
         revert WithdrawalFailed(taxOnWithdrawal);
        }
+       emit DonationRetrievedByDonor(address(this), msg.sender, amountToCollect, amountDonated, block.timestamp);
     }
 
      function voteOnMilestone(bool vote) public {
@@ -238,12 +232,17 @@ function withdrawMilestone() public campaignOwner(msg.sender) {
     if ( _numberOfWithdrawal == 3 ){
         revert MaximumNumberofWithdrawalExceeded();
     }
+     if ( block.timestamp < campaignDuration ){
+        revert CampaignStillRunning();
+    }
     uint256 bal = contractBalance();
     Milestone storage milestone = milestones[_milestoneCounter];
     uint256 totalVotes = milestone.againstVote + milestone.supportVote;
 
-    // Allow withdrawal without voting in the first milestone
-    if (_numberOfWithdrawal == 0 && _milestoneCounter == 1 && block.timestamp > campaignDuration) {
+    // Allow withdrawal without voting in the first milestone //current time less 
+    // than the duration for the first withdrawal
+   
+    if (_numberOfWithdrawal == 0 && _milestoneCounter == 1) {
         //withdrawing 1/3 of the available balance
         processWithdrawal(1 * bal * _baseNumber / (3 * _baseNumber), false);
         milestone.approved = true;
@@ -251,7 +250,9 @@ function withdrawMilestone() public campaignOwner(msg.sender) {
         milestone.status = MilestoneStatus.Approved;
         _numberOfWithdrawal = 1;
         return;
-    }
+    } 
+
+
 
     checkMilestoneStatus(milestone);
 
@@ -274,6 +275,7 @@ function withdrawMilestone() public campaignOwner(msg.sender) {
     } else if (isFinalWithdrawal) {
         withdrawalTax = (1 * _baseNumber * bal) / (_baseNumber * 100); // 1% tax
         amountToWithdraw = bal - withdrawalTax;
+        emit CampaignEnded(address(this), block.timestamp);
     }
 
     _numberOfWithdrawal += 1;
@@ -317,6 +319,9 @@ function processWithdrawal(uint256 amount, bool isTaxPayment) internal {
     if (!success) {
         revert WithdrawalFailed(amount);
     }
+    if ( recipient == msg.sender ){
+        emit MilestoneWithdrawal(msg.sender, amount, block.timestamp);
+    }
 }
 
 function contractBalance() public view returns (uint256) {
@@ -326,6 +331,14 @@ function contractBalance() public view returns (uint256) {
 
 function getFundingDetails() public view returns (address, uint256, uint256){
     return (_campaignOwner, campaignDuration, targetAmount );
+}
+
+function hasVotedOnMilestone() public view returns (bool){
+    Milestone storage milestone = milestones[_milestoneCounter];
+    if (milestone.hasVoted[msg.sender]){
+        return true;
+    }
+    return false;
 }
 
 receive() external payable {}

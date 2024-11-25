@@ -26,6 +26,8 @@ const RSK_MAINNET_RPC_URL = process.env.RSK_MAINNET_RPC_URL;
 const RSK_TESTNET_RPC_URL = process.env.RSK_TESTNET_RPC_URL;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 
+const GANACHE_ACCOUNT_PRIVATE_KEY = "0x8a2ad2e6cac368f838fe2dcbd45e076bf96d9c938a2bd708d7ae662a33b6ea53"
+
 // Ensure environment variables are configured
 if (!RSK_MAINNET_RPC_URL) {
     throw new Error("The RPC URL for the mainnet is not configured.");
@@ -51,6 +53,7 @@ const config: HardhatUserConfig = {
         },
         localhost: {
             url: "http://127.0.0.1:8545",
+            accounts: [GANACHE_ACCOUNT_PRIVATE_KEY]
         },
         rskMainnet: {
             url: RSK_MAINNET_RPC_URL,
