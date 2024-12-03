@@ -18,7 +18,7 @@ https://hardhat.org/getting-started/
 ```text
 .
 ├── contracts
-│   ├── ERC1155.sol 
+│   ├── ERC1155.sol
 │   ├── ERC20.sol
 │   └── ERC721.sol
 ├── deploy
@@ -44,11 +44,9 @@ https://hardhat.org/getting-started/
 -   Rootstock Mainnet
 -   Rootstock Testnet
 
-
 ## Hardhat Shorthand
 
 We recommend installing `hh autocomplete` so you can use `hh` shorthand globally.
-
 
 ```shell
 npm i -g hardhat-shorthand
@@ -80,6 +78,7 @@ npm install
 ```shell
 npm run compile
 ```
+
 #### 3. Environment Setup
 
 To set up your environment, follow these steps:
@@ -88,14 +87,14 @@ To set up your environment, follow these steps:
 
 Ensure you include the following variables:
 
-- `PRIVATE_KEY`: Your private key (e.g., found in account details on Metamask).
-- `RSK_MAINNET_RPC_URL`
-- `RSK_TESTNET_RPC_URL`
+-   `PRIVATE_KEY`: Your private key (e.g., found in account details on Metamask).
+-   `RSK_MAINNET_RPC_URL`
+-   `RSK_TESTNET_RPC_URL`
 
 2. Obtain RPC URLs for the testnet and mainnet:
 
-- For public RPC URLs, visit the [Rootstock Developer Portal](https://dev.rootstock.io/develop/wallet/use/metamask/).
-- For hosted RPC URLs, you can find them at [GetBlock](https://getblock.io/nodes/rsk/).
+-   For public RPC URLs, visit the [Rootstock Developer Portal](https://dev.rootstock.io/develop/wallet/use/metamask/).
+-   For hosted RPC URLs, you can find them at [GetBlock](https://getblock.io/nodes/rsk/).
 
 These URLs will be used to configure your `.env` file for accessing the RSK network.
 
@@ -117,7 +116,6 @@ hh erc721-mint \
  --recipient  <RecipientAddress>\
  --network rskTestnet
 ```
-
 
 ### Verify
 
@@ -171,4 +169,3 @@ npm run sol:format:write
 ```shell
 npm run solhint
 ```
-
